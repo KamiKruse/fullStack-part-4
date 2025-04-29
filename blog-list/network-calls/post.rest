@@ -2,8 +2,8 @@ POST http://localhost:3003/api/blogs
 content-type: application/json
 
 {
-    "title":"Hitchikers Guide to the Galaxy",
-    "author": "Douglas Adams",
-    "url": "somewhere",
-    "likes": "1111111111"
+    "title":"new blog 2 ",
+    "author": "Vivek",
+    "url": "vivek.works",
+    "likes": "2"
 }
