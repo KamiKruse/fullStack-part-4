@@ -2,4 +2,10 @@
 const dummy = (blogs) => {
   return 1
 }
-module.exports = { dummy }
+
+const totalLikes  = (blogs) => {
+  let total = blogs.reduce((acc, next) => next.likes + acc, 0)
+  return total
+}
+
+module.exports = { dummy, totalLikes }
