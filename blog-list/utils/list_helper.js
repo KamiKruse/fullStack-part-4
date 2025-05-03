@@ -10,7 +10,7 @@ const listWithOneBlog = [
     __v: 0,
   },
 ]
-// eslint-disable-next-line no-unused-vars
+
 const blogs = [
   {
     _id: '5a422a851b54a676234d17f7',
@@ -111,4 +111,6 @@ const mostLikes = (blogs) => {
   const bestAuthor = _.maxBy(arrMap, 'likes')
   return bestAuthor
 }
+
+console.log(mostLikes(blogs))
 module.exports = { dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes }
