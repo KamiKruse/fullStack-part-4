@@ -1,5 +1,5 @@
 const _ = require('lodash')
-
+// eslint-disable-next-line no-unused-vars
 const listWithOneBlog = [
   {
     _id: '5a422aa71b54a676234d17f8',
@@ -91,5 +91,24 @@ const mostBlogs = (blogs) => {
     .countBy('author')
     .map((count, author) => ({ author, count })).maxBy('count').value()
 }
-console.log(mostBlogs(listWithOneBlog))
-module.exports = { dummy, totalLikes, favoriteBlog, mostBlogs }
+
+const mostLikes = (blogs) => {
+  if (_.isEmpty(blogs)) {
+    return 'Invalid blog'
+  }
+  const like = _.reduce(blogs, function(val, obj){
+    const key = obj.author
+    const valToAdd = _.isNumber(obj.likes) ? obj.likes : 0
+    val[key] = (val[key] || 0) + valToAdd
+    return val
+  }, {})
+  const arrMap = _.map(like, (totalLikes, author) => {
+    return {
+      author: author,
+      likes: totalLikes
+    }
+  })
+  const bestAuthor = _.maxBy(arrMap, 'likes')
+  return bestAuthor
+}
+module.exports = { dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes }
