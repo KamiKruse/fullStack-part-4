@@ -1,5 +1,5 @@
 const { test, after, beforeEach } = require('node:test')
-// const assert = require('node:assert')
+const assert = require('node:assert')
 const mongoose = require('mongoose')
 const app = require('../app')
 const supertest = require('supertest')
@@ -61,42 +61,31 @@ beforeEach(async () => {
   await Blog.deleteMany({})
   console.log('cleared')
 
-  initialBlogs.forEach(async(blog) => {
-    let blogObject = new Blog(blog)
-    await blogObject.save()
-    console.log('saved')
-  })
-  console.log('done')
+  const blogObjects = initialBlogs.map(blog => new Blog(blog))
+  const promiseArray = blogObjects.map(blog => blog.save())
+  await Promise.all(promiseArray)
 })
 
-test('expect get to return application/json format', async() => {
+test('expect get to return application/json format', async () => {
   await api.get('/api/blogs').expect(200).expect('Content-Type', /application\/json/)
+  const dbBlogs = await api.get('/api/blogs')
+  assert.strictEqual(initialBlogs.length, dbBlogs.body.length)
 })
-// test.only('expect get to return application/json format', async () => {
-//   console.log('[DEBUG] Test: Running GET /api/blogs test')
-//   const response = await api.get('/api/blogs')
 
-//   console.log('[DEBUG] Test: Response status:', response.status)
-//   console.log(
-//     '[DEBUG] Test: Response headers:',
-//     JSON.stringify(response.headers, null, 2)
-//   )
-//   console.log(
-//     '[DEBUG] Test: Response Content-Type header:',
-//     response.headers['content-type']
-//   )
-//   console.log(
-//     '[DEBUG] Test: Response body:',
-//     JSON.stringify(response.body, null, 2).substring(0, 200) + '...'
-//   )
-//   assert.strictEqual(response.status, 200, 'Expected status code 200')
-//   assert.ok(
-//     response.headers['content-type'] &&
-//       response.headers['content-type'].includes('application/json'),
-//     `Expected Content-Type to include application/json, got: ${response.headers['content-type']}`
-//   )
-// })
-
-after(async() => {
+test('expect unique identifier of blog posts as id', async () => {
+  const response = await api.get('/api/blogs').expect(200)
+  assert.ok(Array.isArray(response.body), 'Response body should be an array')
+  assert.ok(
+    response.body.length > 0,
+    'Response body should not be empty'
+  )
+  response.body.forEach((blog) =>
+    assert.ok(
+      Object.hasOwn(blog, 'id'),
+      `Blog object should have an 'id' property. Blog: ${JSON.stringify(blog)}`
+    )
+  )
+})
+after(async () => {
   await mongoose.connection.close()
 })
