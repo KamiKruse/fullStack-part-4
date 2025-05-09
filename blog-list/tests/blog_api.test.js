@@ -103,6 +103,21 @@ test('post request to the endpoint', async() => {
   )
   assert.strictEqual(initialBlogs.length+1, response.body.length)
 })
+
+test.only('likes missing from the request', async () => {
+  const newBlogWithNoLikes = {
+    title: 'test',
+    author: 'test',
+    url: 'test',
+  }
+  await api
+    .post('/api/blogs')
+    .send(newBlogWithNoLikes)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+  const response = await api.get('/api/blogs')
+  assert.strictEqual(0, response.body[response.body.length - 1].likes)
+})
 after(async () => {
   await mongoose.connection.close()
 })
