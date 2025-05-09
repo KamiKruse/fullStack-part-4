@@ -104,7 +104,7 @@ test('post request to the endpoint', async() => {
   assert.strictEqual(initialBlogs.length+1, response.body.length)
 })
 
-test.only('likes missing from the request', async () => {
+test('likes missing from the request', async () => {
   const newBlogWithNoLikes = {
     title: 'test',
     author: 'test',
@@ -117,6 +117,39 @@ test.only('likes missing from the request', async () => {
     .expect('Content-Type', /application\/json/)
   const response = await api.get('/api/blogs')
   assert.strictEqual(0, response.body[response.body.length - 1].likes)
+})
+
+test('expect 400 bad request for no title and no url', async () => {
+  const newBlogWithNoTitleorURL = {
+    author: 'test'
+  }
+  await api
+    .post('/api/blogs')
+    .send(newBlogWithNoTitleorURL)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+})
+test('expect 400 bad request for no title', async () => {
+  const newBlogWithNoTitleorURL = {
+    author: 'test',
+    url: 'test'
+  }
+  await api
+    .post('/api/blogs')
+    .send(newBlogWithNoTitleorURL)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
+})
+test.only('expect 400 bad request for no url', async () => {
+  const newBlogWithNoTitleorURL = {
+    title: 'test',
+    author: 'test',
+  }
+  await api
+    .post('/api/blogs')
+    .send(newBlogWithNoTitleorURL)
+    .expect(400)
+    .expect('Content-Type', /application\/json/)
 })
 after(async () => {
   await mongoose.connection.close()
