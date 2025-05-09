@@ -86,6 +86,23 @@ test('expect unique identifier of blog posts as id', async () => {
     )
   )
 })
+
+test('post request to the endpoint', async() => {
+  const newBlog = {
+    title: 'test blog',
+    author: 'test',
+    url:'www.test.com',
+    likes: 9001
+  }
+  await api.post('/api/blogs').send(newBlog).expect(201).expect('Content-Type', /application\/json/)
+  const response = await api.get('/api/blogs')
+  const titles = response.body.map(blog => blog.title)
+  assert.ok(
+    titles.includes('test blog'),
+    'The title of the newly added blog should be in the list.'
+  )
+  assert.strictEqual(initialBlogs.length+1, response.body.length)
+})
 after(async () => {
   await mongoose.connection.close()
 })
