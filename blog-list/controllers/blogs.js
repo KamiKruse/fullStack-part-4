@@ -28,6 +28,17 @@ blogRouter.post('/', async (request, response, next) => {
     console.error('[DEBUG] blogsRouter POST /: Error in route handler:', error)
     next(error)
   }
+})
 
+blogRouter.delete('/:id', async(request, response, next) => {
+  try {
+    const id = request.params.id
+    // eslint-disable-next-line no-unused-vars
+    const blogById = await Blog.findByIdAndDelete(id)
+    response.status(204).end()
+  } catch (error) {
+    console.error('[DEBUG] blogsRouter DELETE /: Error in route handler:', error)
+    next(error)
+  }
 })
 module.exports = blogRouter
