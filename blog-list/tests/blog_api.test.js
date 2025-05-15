@@ -149,7 +149,7 @@ describe('when some blogs exist', () => {
 
 })
 
-describe.only('when there is initially one user in the db', () => {
+describe('when there is initially one user in the db', () => {
   beforeEach(async () => {
     await User.deleteMany({})
 
@@ -158,6 +158,7 @@ describe.only('when there is initially one user in the db', () => {
 
     await user.save()
   })
+
   test('creation and retrieval of a user', async() => {
     const usersAtStart = await helper.usersInDB()
     const newUser = {
@@ -178,6 +179,42 @@ describe.only('when there is initially one user in the db', () => {
     const unames = response.body.map(u => u.username)
     assert(unames.includes('root'))
     assert(unames.includes('test'))
+  })
+
+  test('creating invalid user with short username returns 400', async () => {
+    const malformedUser = {
+      username: 'a1',
+      password: 'validPassword'
+    }
+    const response = await api
+      .post('/api/users')
+      .send(malformedUser)
+      .expect(400)
+    console.log(response.body)
+  })
+  test('creating invalid user with no username returns 400', async () => {
+    const malformedUser = {
+      name: 'a1',
+      password: 'testPass'
+    }
+    await api.post('/api/users').send(malformedUser).expect(400)
+  })
+  test('creating invalid user with no password returns 400', async () => {
+    const malformedUser = {
+      username: 'a12323',
+      name: 'a1'
+    }
+    await api.post('/api/users').send(malformedUser).expect(400)
+
+  })
+  test.only('creating invalid user with short password returns 400', async () => {
+    const malformedUser = {
+      username: 'a12323',
+      name: 'a1',
+      password: '12'
+    }
+    const response = await api.post('/api/users').send(malformedUser).expect(400)
+    console.log(response.body)
   })
 
 })
