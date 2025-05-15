@@ -6,7 +6,8 @@ const supertest = require('supertest')
 const api = supertest(app)
 const Blog = require('../models/blog')
 const helper = require('./helper.test')
-
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
 
 describe('when some blogs exist', () => {
   beforeEach(async () => {
@@ -144,6 +145,39 @@ describe('when some blogs exist', () => {
       assert.ok(updatedBlog, 'Blog should be in DB')
       assert.strictEqual(updatedBlog.likes, lastBlog.likes)
     })
+  })
+
+})
+
+describe.only('when there is initially one user in the db', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('test', 10)
+    const user = new User({ username: 'root', passwordHash })
+
+    await user.save()
+  })
+  test('creation and retrieval of a user', async() => {
+    const usersAtStart = await helper.usersInDB()
+    const newUser = {
+      username: 'test',
+      name: 'vivek',
+      password: 't1'
+    }
+    await api.post('/api/users').send(newUser).expect(201).expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDB()
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1)
+
+    const usernames = usersAtEnd.map(u => u.username)
+    assert(usernames.includes(newUser.username))
+
+    const response = await api.get('/api/users').expect(200).expect('Content-Type', /application\/json/)
+    assert.strictEqual(response.body.length, 2 )
+    const unames = response.body.map(u => u.username)
+    assert(unames.includes('root'))
+    assert(unames.includes('test'))
   })
 
 })

@@ -7,3 +7,24 @@ content-type: application/json
     "url": "vivek.works",
     "likes": "2"
 }
+
+### Create first user
+POST http://localhost:3003/api/users
+content-type: application/json
+
+{
+     "username": "test",
+        "name": "vivek",
+      "password": "t1"
+}
+
+
+### Create second user
+POST http://localhost:3003/api/users
+content-type: application/json
+
+{
+     "username": "test1",
+        "name": "vivek1",
+      "password": "t2"
+}
