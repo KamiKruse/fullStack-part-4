@@ -42,7 +42,7 @@ const getTokenFrom = (request, response, next) => {
         return response.status(401).json({ error: 'token invalid' })
       }
       request.user = decodedToken
-      console.log(request)
+      // console.log(request)
       next()
     } catch(error){
       return next(error)

@@ -39,9 +39,14 @@ blogRouter.post('/', async (request, response, next) => {
 
 blogRouter.delete('/:id', async(request, response, next) => {
   try {
-    const id = request.params.id
-    // eslint-disable-next-line no-unused-vars
-    const blogById = await Blog.findByIdAndDelete(id)
+    const blog = await Blog.findById(request.params.id)
+    if(!blog){
+      return response.status(404).json({ error: 'Blog not found' })
+    }
+    if(!request.user || blog.user.toString() !== request.user.id){
+      return response.status(401).json({ error: 'Unauthorized' })
+    }
+    await Blog.deleteOne()
     response.status(204).end()
   } catch (error) {
     next(error)

@@ -200,11 +200,10 @@ describe('when there is initially one user in the db', () => {
       username: 'a1',
       password: 'validPassword',
     }
-    const response = await api
+    await api
       .post('/api/users')
       .send(malformedUser)
       .expect(400)
-    console.log(response.body)
   })
   test('creating invalid user with no username returns 400', async () => {
     const malformedUser = {
@@ -226,11 +225,10 @@ describe('when there is initially one user in the db', () => {
       name: 'a1',
       password: '12',
     }
-    const response = await api
+    await api
       .post('/api/users')
       .send(malformedUser)
       .expect(400)
-    console.log(response.body)
   })
   test('creating invalid user with short password returns 400', async () => {
     const malformedUser = {
@@ -238,11 +236,10 @@ describe('when there is initially one user in the db', () => {
       name: 'a1',
       password: '12',
     }
-    const response = await api
+    await api
       .post('/api/users')
       .send(malformedUser)
       .expect(400)
-    console.log(response.body)
   })
 })
 describe('token based auth', async () => {
@@ -252,10 +249,13 @@ describe('token based auth', async () => {
     await helper.createUser(helper.initialUsers[0])
     await helper.createUser(helper.initialUsers[1])
     const users = await helper.usersInDB()
-    helper.initialBlogs.forEach(blog => {
-      blog.user = users[0].id
-    })
-    Blog.insertMany(helper.initialBlogs)
+    const userId = users[0].id
+    const blogsToInsert = helper.initialBlogs.map(blog => ({ ...blog, user: userId }))
+    const insertedBlogs = await Blog.insertMany(blogsToInsert)
+
+    const user = await User.findById(userId)
+    user.blogs = insertedBlogs.map(blog => blog._id)
+    await user.save()
   })
   test('post route with token auth', async () => {
     const loginDetail = {
@@ -265,7 +265,7 @@ describe('token based auth', async () => {
     const response = await api.post('/api/login').send(loginDetail).expect(200)
     assert.ok(response.body.token, 'Token should be defined')
   })
-  test.only('adding blog with valid token', async () => {
+  test('adding blog with valid token', async () => {
     const users = helper.initialUsers
     const loginResponse = await api.post('/api/login').send({ username: users[0].username, password: users[0].password }).expect(200)
     const token = loginResponse.body.token
@@ -298,6 +298,15 @@ describe('token based auth', async () => {
       .post('/api/blogs')
       .send(newBlog)
       .expect(401)
+  })
+  test.only('deleting a blog with a valid token', async() => {
+    const users = helper.initialUsers
+    const loginResponse = await api.post('/api/login').send({ username: users[0].username, password: users[0].password }).expect(200)
+    const token = loginResponse.body.token
+    const totalBlogs = await helper.blogsInDB()
+    const lastBlog = totalBlogs[totalBlogs.length - 1]
+    console.log('test:', lastBlog.id)
+    await api.delete(`/api/blogs/${lastBlog.id}`).set('Authorization', `Bearer ${token}`).expect(204)
   })
 })
 after(async () => {
