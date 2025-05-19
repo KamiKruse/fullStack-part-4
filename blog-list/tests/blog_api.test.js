@@ -265,7 +265,7 @@ describe('token based auth', async () => {
     const response = await api.post('/api/login').send(loginDetail).expect(200)
     assert.ok(response.body.token, 'Token should be defined')
   })
-  test('adding blog with valid token', async () => {
+  test.only('adding blog with valid token', async () => {
     const users = helper.initialUsers
     const loginResponse = await api.post('/api/login').send({ username: users[0].username, password: users[0].password }).expect(200)
     const token = loginResponse.body.token

@@ -20,6 +20,7 @@ mongoose
     logger.info('error connecting to mongoDB', error.message)
   })
 
+app.use(middleware.getTokenFrom)
 app.use(express.static('dist'))
 app.use(middleware.requestLogger)
 app.use(express.json())
@@ -28,5 +29,6 @@ app.use('/api/blogs', blogsRouter)
 app.use('/api/users', userRouter)
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
+
 
 module.exports = app
