@@ -27,12 +27,13 @@ blogRouter.post('/', async (request, response, next) => {
       author: body.author,
       url: body.url,
       likes: body.likes,
-      user: user
+      user: userDB._id
     })
     const savedBlog = await blog.save()
-    user.blogs = user.blogs.concat(savedBlog._id)
+    userDB.blogs = userDB.blogs.concat(savedBlog._id)
     await user.save()
-    response.status(201).json(savedBlog)
+    const populatedBlog = await savedBlog.populate('user', { blogs: 0 })
+    response.status(201).json(populatedBlog)
   } catch (error) {
     next(error)
   }
@@ -48,7 +49,7 @@ blogRouter.delete('/:id', async(request, response, next) => {
     if(!user || blog.user.toString() !== user.id){
       return response.status(401).json({ error: 'Unauthorized' })
     }
-    await Blog.deleteOne()
+    await blog.deleteOne()
     response.status(204).end()
   } catch (error) {
     next(error)
