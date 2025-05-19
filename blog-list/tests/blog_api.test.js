@@ -12,16 +12,25 @@ const User = require('../models/user')
 describe('when some blogs exist', () => {
   beforeEach(async () => {
     await Blog.deleteMany({})
+    await User.deleteMany({})
+
+    await helper.createUser(helper.initialUsers[0])
+    await helper.createUser(helper.initialUsers[1])
+
+    const users = await helper.usersInDB()
+    helper.initialBlogs.forEach((blog) => {
+      blog.user = users[1].id
+    })
     await Blog.insertMany(helper.initialBlogs)
   })
   describe('testing GET route for viewing blogs', async () => {
     test('expect get to return application/json format', async () => {
-      await api
+      const blogsDB = await helper.blogsInDB()
+      const dbBlogs = await api
         .get('/api/blogs')
         .expect(200)
         .expect('Content-Type', /application\/json/)
-      const dbBlogs = await api.get('/api/blogs')
-      assert.strictEqual(helper.initialBlogs.length, dbBlogs.body.length)
+      assert.strictEqual(blogsDB.length, dbBlogs.body.length)
     })
 
     test('expect unique identifier of blog posts as id', async () => {
@@ -114,7 +123,6 @@ describe('when some blogs exist', () => {
           .expect('Content-Type', /application\/json/)
       })
     })
-
   })
 
   describe('deletion of blogs from db', async () => {
@@ -146,7 +154,6 @@ describe('when some blogs exist', () => {
       assert.strictEqual(updatedBlog.likes, lastBlog.likes)
     })
   })
-
 })
 
 describe('when there is initially one user in the db', () => {
@@ -159,24 +166,31 @@ describe('when there is initially one user in the db', () => {
     await user.save()
   })
 
-  test('creation and retrieval of a user', async() => {
+  test('creation and retrieval of a user', async () => {
     const usersAtStart = await helper.usersInDB()
     const newUser = {
       username: 'test',
       name: 'vivek',
-      password: 't1'
+      password: 't1234',
     }
-    await api.post('/api/users').send(newUser).expect(201).expect('Content-Type', /application\/json/)
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
 
     const usersAtEnd = await helper.usersInDB()
     assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1)
 
-    const usernames = usersAtEnd.map(u => u.username)
+    const usernames = usersAtEnd.map((u) => u.username)
     assert(usernames.includes(newUser.username))
 
-    const response = await api.get('/api/users').expect(200).expect('Content-Type', /application\/json/)
-    assert.strictEqual(response.body.length, 2 )
-    const unames = response.body.map(u => u.username)
+    const response = await api
+      .get('/api/users')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+    assert.strictEqual(response.body.length, 2)
+    const unames = response.body.map((u) => u.username)
     assert(unames.includes('root'))
     assert(unames.includes('test'))
   })
@@ -184,7 +198,7 @@ describe('when there is initially one user in the db', () => {
   test('creating invalid user with short username returns 400', async () => {
     const malformedUser = {
       username: 'a1',
-      password: 'validPassword'
+      password: 'validPassword',
     }
     const response = await api
       .post('/api/users')
@@ -195,28 +209,96 @@ describe('when there is initially one user in the db', () => {
   test('creating invalid user with no username returns 400', async () => {
     const malformedUser = {
       name: 'a1',
-      password: 'testPass'
+      password: 'testPass',
     }
     await api.post('/api/users').send(malformedUser).expect(400)
   })
   test('creating invalid user with no password returns 400', async () => {
     const malformedUser = {
       username: 'a12323',
-      name: 'a1'
+      name: 'a1',
     }
     await api.post('/api/users').send(malformedUser).expect(400)
-
   })
-  test.only('creating invalid user with short password returns 400', async () => {
+  test('creating invalid user with short password returns 400', async () => {
     const malformedUser = {
       username: 'a12323',
       name: 'a1',
-      password: '12'
+      password: '12',
     }
-    const response = await api.post('/api/users').send(malformedUser).expect(400)
+    const response = await api
+      .post('/api/users')
+      .send(malformedUser)
+      .expect(400)
     console.log(response.body)
   })
+  test('creating invalid user with short password returns 400', async () => {
+    const malformedUser = {
+      username: 'a12323',
+      name: 'a1',
+      password: '12',
+    }
+    const response = await api
+      .post('/api/users')
+      .send(malformedUser)
+      .expect(400)
+    console.log(response.body)
+  })
+})
+describe('token based auth', async () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Blog.deleteMany({})
+    await helper.createUser(helper.initialUsers[0])
+    await helper.createUser(helper.initialUsers[1])
+    const users = await helper.usersInDB()
+    helper.initialBlogs.forEach(blog => {
+      blog.user = users[0].id
+    })
+    Blog.insertMany(helper.initialBlogs)
+  })
+  test('post route with token auth', async () => {
+    const loginDetail = {
+      username: 'Test',
+      password: 'testPassword1'
+    }
+    const response = await api.post('/api/login').send(loginDetail).expect(200)
+    assert.ok(response.body.token, 'Token should be defined')
+  })
+  test('adding blog with valid token', async () => {
+    const users = helper.initialUsers
+    const loginResponse = await api.post('/api/login').send({ username: users[0].username, password: users[0].password }).expect(200)
+    const token = loginResponse.body.token
+    assert.ok(token, 'Token should be returned on login')
+    const newBlog = {
+      title: 'test blog with token auth',
+      author: users[0].name,
+      url: 'www.authTest.com',
+      likes: 9999,
+    }
+    const response = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
 
+    assert.strictEqual(response.body.title, newBlog.title)
+    assert.strictEqual(response.body.author, newBlog.author)
+    assert.ok(response.body.user, 'Blog should have a user field')
+  })
+  test('adding blog with invalid token', async() => {
+    const newBlog = {
+      title: 'Unauthorized blog',
+      author: 'No Auth',
+      url: 'http://noauth.com',
+      likes: 0
+    }
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+  })
 })
 after(async () => {
   await mongoose.connection.close()
